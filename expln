@@ -1,0 +1,54 @@
+This code represents the backend of an API call I developed to ping VMs,
+It verifies if a service run on a computer.
+If the service does run it will return status code 200, if not it will be 400.
+For security reasons I can’t show the full API structure, just the backend.
+
+Code:
+public class VMPing {
+    @Test(description = "verifies Java service is live")
+    public void testVMPing() throws InterruptedException {
+        Assert.assertTrue(runpPwsh(PathChanger.platformPath("$PATH TO PWSH$")));
+    }
+    // function runs Powershell scripts via path with bypass
+    public static boolean runpPwsh(String path){
+        try {
+            String line;
+            String command = "powershell.exe -ExecutionPolicy Bypass -File \"" + path + "\"";
+            Process powerShellProcess = Runtime.getRuntime().exec(command);
+            powerShellProcess.getOutputStream().close();
+            StringBuilder output = new StringBuilder();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(powerShellProcess.getInputStream()));
+            while ((line = reader.readLine()) != null) {
+                output.append(line).append("\n");
+            }
+            int exitCode = powerShellProcess.waitFor();
+            if (exitCode == 0) {
+                String scriptOutput = output.toString().trim();
+                return Boolean.parseBoolean(scriptOutput);
+            } else {
+                return false;
+            }
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+}
+
+Script:
+$className = "ServiceTst"
+
+$javaProcesses = Get-WmiObject -Query "SELECT CommandLine FROM Win32_Process WHERE Name = 'java.exe'"
+
+$javaProcessRunning = $javaProcesses | ForEach-Object {
+    $commandLine = $_.CommandLine
+    if ($commandLine -match $className) {
+        $true
+    }
+}
+
+if ($javaProcessRunning) {
+    Write-Host "True"
+} else {
+    Write-Host "False"
+}
